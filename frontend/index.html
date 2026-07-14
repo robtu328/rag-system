@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Knowledge System</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="login-view" class="view">
+  <div class="login-card">
+    <h1>Knowledge system</h1>
+    <p class="subtitle">Sign in to search the document pool</p>
+    <form id="login-form">
+      <label>Email
+        <input type="email" id="login-email" required autocomplete="username">
+      </label>
+      <label>Password
+        <input type="password" id="login-password" required autocomplete="current-password">
+      </label>
+      <button type="submit">Sign in</button>
+      <p id="login-error" class="error"></p>
+    </form>
+  </div>
+</div>
+
+<div id="app-view" class="view hidden">
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>Knowledge system</h2>
+      <span id="user-email" class="user-email"></span>
+    </div>
+    <nav>
+      <button class="nav-btn active" data-tab="chat">Chat</button>
+      <button class="nav-btn" data-tab="documents">Documents</button>
+    </nav>
+    <button id="logout-btn" class="logout-btn">Sign out</button>
+  </aside>
+
+  <main>
+    <section id="chat-tab" class="tab">
+      <div class="chat-scope">
+        <label for="chat-doc-scope">Scope</label>
+        <select id="chat-doc-scope">
+          <option value="">All documents (similarity search)</option>
+        </select>
+      </div>
+      <div id="messages" class="messages"></div>
+      <form id="chat-form" class="chat-form">
+        <textarea id="chat-input" placeholder="Ask a question about your documents..." rows="1" required></textarea>
+        <button type="submit" id="send-btn">Send</button>
+      </form>
+    </section>
+
+    <section id="documents-tab" class="tab hidden">
+      <div class="documents-header">
+        <h3>Documents</h3>
+        <form id="upload-form">
+          <input type="file" id="upload-file" accept=".pdf,.docx,.txt,.md,.html,.htm" required>
+          <input type="text" id="upload-groups" placeholder="groups (comma separated)">
+          <button type="submit">Upload</button>
+        </form>
+      </div>
+      <p id="upload-status"></p>
+      <table id="documents-table">
+        <thead>
+          <tr><th>File</th><th>Status</th><th>Chunks</th><th>Groups</th><th></th></tr>
+        </thead>
+        <tbody id="documents-body"></tbody>
+      </table>
+    </section>
+  </main>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
