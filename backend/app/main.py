@@ -7,7 +7,7 @@ from sqlalchemy import text as sql_text
 from app.auth import hash_password
 from app.database import Base, SessionLocal, engine
 from app.models import User
-from app.routers import auth, chat, documents
+from app.routers import auth, chat, documents, groups, users
 from app.vectorstore import ensure_collection
 
 app = FastAPI(title="Knowledge System API")
@@ -23,6 +23,8 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(documents.router)
 app.include_router(chat.router)
+app.include_router(users.router)
+app.include_router(groups.router)
 
 
 @app.on_event("startup")

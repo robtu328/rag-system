@@ -34,6 +34,7 @@
     <nav>
       <button class="nav-btn active" data-tab="chat">Chat</button>
       <button class="nav-btn" data-tab="documents">Documents</button>
+      <button class="nav-btn hidden" id="users-nav-btn" data-tab="users">Users</button>
     </nav>
     <button id="logout-btn" class="logout-btn">Sign out</button>
   </aside>
@@ -74,6 +75,26 @@
           <tr><th>File</th><th>Status</th><th>Chunks</th><th>Groups</th><th></th></tr>
         </thead>
         <tbody id="documents-body"></tbody>
+      </table>
+    </section>
+
+    <section id="users-tab" class="tab hidden">
+      <div class="documents-header">
+        <h3>Users</h3>
+        <form id="create-user-form">
+          <input type="email" id="new-user-email" placeholder="email" required>
+          <input type="password" id="new-user-password" placeholder="password" required autocomplete="new-password">
+          <input type="text" id="new-user-name" placeholder="full name (optional)">
+          <input type="text" id="new-user-groups" placeholder="groups (comma separated)">
+          <button type="submit">Create user</button>
+        </form>
+      </div>
+      <p id="users-status"></p>
+      <table id="users-table">
+        <thead>
+          <tr><th>Email</th><th>Name</th><th>Groups</th><th>Admin</th><th>Active</th><th></th></tr>
+        </thead>
+        <tbody id="users-body"></tbody>
       </table>
     </section>
   </main>

@@ -18,7 +18,23 @@ class UserOut(BaseModel):
     email: EmailStr
     full_name: Optional[str]
     is_admin: bool
+    is_active: bool
     group_names: list[str]
+
+    class Config:
+        from_attributes = True
+
+
+class UserUpdate(BaseModel):
+    is_active: Optional[bool] = None
+    is_admin: Optional[bool] = None
+    group_names: Optional[list[str]] = None
+
+
+class GroupOut(BaseModel):
+    id: str
+    name: str
+    description: Optional[str] = None
 
     class Config:
         from_attributes = True

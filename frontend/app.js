@@ -53,6 +53,7 @@ async function boot() {
     $("user-email").textContent = currentUser.email;
     $("login-view").classList.add("hidden");
     $("app-view").classList.remove("hidden");
+    $("users-nav-btn").classList.toggle("hidden", !currentUser.is_admin);
     loadDocuments();
   } catch (e) {
     logout();
@@ -81,6 +82,7 @@ document.querySelectorAll(".nav-btn").forEach((btn) => {
     btn.classList.add("active");
     $(`${btn.dataset.tab}-tab`).classList.remove("hidden");
     if (btn.dataset.tab === "documents") loadDocuments();
+    if (btn.dataset.tab === "users") loadUsers();
   });
 });
 
@@ -213,6 +215,101 @@ $("upload-form").addEventListener("submit", async (e) => {
     loadDocuments();
   } catch (err) {
     $("upload-status").textContent = `Error: ${err.message}`;
+  }
+});
+
+// --- Users (admin only) ---
+
+async function loadUsers() {
+  try {
+    const users = await api("/users");
+    const body = $("users-body");
+    body.innerHTML = "";
+    users.forEach((u) => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${u.email}</td>
+        <td>${u.full_name || ""}</td>
+        <td><input type="text" class="user-groups-input" value="${u.group_names.join(", ")}" data-id="${u.id}"></td>
+        <td><input type="checkbox" class="user-admin-toggle" data-id="${u.id}" ${u.is_admin ? "checked" : ""}></td>
+        <td><input type="checkbox" class="user-active-toggle" data-id="${u.id}" ${u.is_active ? "checked" : ""}></td>
+        <td><button class="user-save-btn" data-id="${u.id}">Save groups</button></td>
+      `;
+      body.appendChild(row);
+    });
+
+    body.querySelectorAll(".user-save-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const input = body.querySelector(`.user-groups-input[data-id="${btn.dataset.id}"]`);
+        const group_names = input.value.split(",").map((g) => g.trim()).filter(Boolean);
+        try {
+          await api(`/users/${btn.dataset.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ group_names }),
+          });
+          $("users-status").textContent = "Saved.";
+        } catch (err) {
+          $("users-status").textContent = `Error: ${err.message}`;
+        }
+      });
+    });
+
+    body.querySelectorAll(".user-admin-toggle").forEach((toggle) => {
+      toggle.addEventListener("change", async () => {
+        try {
+          await api(`/users/${toggle.dataset.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ is_admin: toggle.checked }),
+          });
+          $("users-status").textContent = "Saved.";
+        } catch (err) {
+          toggle.checked = !toggle.checked;
+          $("users-status").textContent = `Error: ${err.message}`;
+        }
+      });
+    });
+
+    body.querySelectorAll(".user-active-toggle").forEach((toggle) => {
+      toggle.addEventListener("change", async () => {
+        try {
+          await api(`/users/${toggle.dataset.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ is_active: toggle.checked }),
+          });
+          $("users-status").textContent = "Saved.";
+        } catch (err) {
+          toggle.checked = !toggle.checked;
+          $("users-status").textContent = `Error: ${err.message}`;
+        }
+      });
+    });
+  } catch (err) {
+    $("users-status").textContent = err.message;
+  }
+}
+
+$("create-user-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = $("new-user-email").value;
+  const password = $("new-user-password").value;
+  const full_name = $("new-user-name").value || null;
+  const group_names = $("new-user-groups").value.split(",").map((g) => g.trim()).filter(Boolean);
+
+  $("users-status").textContent = "Creating...";
+  try {
+    await api("/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, full_name, group_names }),
+    });
+    $("users-status").textContent = "User created.";
+    $("create-user-form").reset();
+    loadUsers();
+  } catch (err) {
+    $("users-status").textContent = `Error: ${err.message}`;
   }
 });
 
