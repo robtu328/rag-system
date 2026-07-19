@@ -2,6 +2,7 @@ import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text as sql_text
 
 from app.auth import hash_password
 from app.database import Base, SessionLocal, engine
@@ -27,8 +28,19 @@ app.include_router(chat.router)
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
+    _run_migrations()
     ensure_collection()
     _bootstrap_admin()
+
+
+def _run_migrations():
+    """
+    create_all() only creates missing tables, not missing columns on tables
+    that already exist. There's no Alembic here yet, so new columns get a
+    one-line, idempotent ALTER TABLE instead.
+    """
+    with engine.begin() as conn:
+        conn.execute(sql_text("ALTER TABLE documents ADD COLUMN IF NOT EXISTS summary TEXT"))
 
 
 def _bootstrap_admin():

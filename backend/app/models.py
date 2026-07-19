@@ -76,6 +76,12 @@ class Document(Base):
     num_chunks = Column(Integer, default=0)
     status = Column(String, default="pending")  # pending | processing | ready | failed
     error_message = Column(Text, nullable=True)
+    # Structured extract generated once at ingestion (exhaustive list of every
+    # distinct fact/requirement in the doc). Used as cheap context for
+    # full-document-mode questions instead of resending all raw chunks on
+    # every query. Null for docs uploaded before this existed, or if
+    # generation failed — those fall back to raw-chunk concatenation.
+    summary = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     groups = relationship("Group", secondary=document_groups, back_populates="documents")

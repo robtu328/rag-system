@@ -59,6 +59,7 @@ class ChatRequest(BaseModel):
     query: str
     history: list[ChatTurn] = []
     document_id: Optional[str] = None
+    answer_language: Optional[str] = None
 
 
 class SourceChunk(BaseModel):

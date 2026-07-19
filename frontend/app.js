@@ -121,12 +121,18 @@ $("chat-form").addEventListener("submit", async (e) => {
   $("send-btn").disabled = true;
 
   const documentId = $("chat-doc-scope").value || null;
+  const answerLanguage = $("chat-lang").value || null;
 
   try {
     const result = await api("/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query, history: history.slice(0, -1), document_id: documentId }),
+      body: JSON.stringify({
+        query,
+        history: history.slice(0, -1),
+        document_id: documentId,
+        answer_language: answerLanguage,
+      }),
     });
     renderMessage("assistant", result.answer, result.sources);
     history.push({ role: "assistant", content: result.answer });

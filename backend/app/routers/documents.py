@@ -9,6 +9,7 @@ from app.database import get_db
 from app.embeddings import embed_texts
 from app.ingestion import chunk_text, hash_bytes, parse_document
 from app.models import Document, Group, User
+from app.rag import generate_document_summary
 from app.schemas import DocumentOut
 from app.vectorstore import delete_document as vs_delete_document
 from app.vectorstore import upsert_chunks
@@ -44,6 +45,15 @@ def _process_document(document_id: str, path: Path, filename: str, groups: list[
         )
 
         doc.num_chunks = len(chunks)
+
+        # Best-effort: structured extract for cheap full-document-mode
+        # queries later. Non-fatal — the document is still fully usable via
+        # similarity search / raw-chunk fallback if this fails.
+        try:
+            doc.summary = generate_document_summary(filename, text)
+        except Exception:  # noqa: BLE001
+            doc.summary = None
+
         doc.status = "ready"
         db.commit()
     except Exception as e:  # noqa: BLE001
