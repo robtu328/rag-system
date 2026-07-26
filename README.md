@@ -83,7 +83,7 @@ Document pool → ingestion (parse, chunk, embed with BGE-M3)
 6. **Load documents**
 
    - Through the UI: Documents tab → choose file → optionally specify groups
-     → Upload.
+     → pick a **Summary** mode (see below) → Upload.
    - In bulk, from the command line:
 
      ```bash
@@ -94,14 +94,77 @@ Document pool → ingestion (parse, chunk, embed with BGE-M3)
        --groups dcas-cert,public
      ```
 
+     Add `--auto-summary` to generate summaries immediately via the API for
+     the whole batch (see below).
+
    Processing happens in the background; refresh the Documents tab to see
    status move from `pending` → `processing` → `ready` (or `failed`, with an
    error message you can inspect via `docker compose logs backend`).
+
+   **Summary mode** controls how the document's full-document-mode summary
+   (used for "list all X" style questions — see below) gets generated:
+
+   - **Skip** (default) — the document still gets chunked/embedded/`ready`
+     normally, just without a summary yet. Fill it in later via
+     `scripts/claude_code_summarize.py`, which bills against a Claude Code
+     subscription instead of the API key.
+   - **Automatic** — generated immediately via the Anthropic API as part of
+     upload processing. Costs a metered API call per document. Pass
+     `auto_summary=true` to the API directly, or `--auto-summary` on
+     `ingest_cli.py`.
 
 7. **Ask questions**
 
    Chat tab → type a question. Answers cite the source filename and chunk;
    the sources panel under each answer shows exactly which excerpts were used.
+
+## Generating document summaries without API cost (via Claude Code)
+
+See `scripts/SUMMARY_GENERATION.md` for the full walkthrough (upload → wait
+for processing → generate → verify → use it in Chat). Short version below.
+
+Full-document-mode questions (e.g. "list all X") use a pre-computed,
+structured extract of each document instead of resending raw chunks on every
+query. By default, upload skips generating this extract, so nothing touches
+the metered API. Choose **Summary: automatic** at upload time (see step 6
+above) if you'd rather it be generated immediately via the Anthropic API
+(`ANTHROPIC_API_KEY` in `.env` — see `generate_document_summary` in
+`backend/app/rag.py`) instead of filling it in later.
+
+If you have a [Claude Code](https://claude.com/claude-code) session available
+and want to avoid that per-document API cost, `scripts/claude_code_summarize.py`
+does the same extraction through the `claude` CLI instead, which bills against
+your Claude Code subscription rather than the metered API key. Both paths
+write to the same `documents.summary` column, so use whichever fits — the
+automatic path for unattended uploads, this one when you're around to run it.
+
+Requires the `claude` CLI installed and logged in on this host.
+
+```bash
+# Process every document that's currently missing a summary
+python scripts/claude_code_summarize.py --pending
+
+# Process one specific document by ID
+python scripts/claude_code_summarize.py <document_id>
+```
+
+Under the hood this pipes each document's raw text to `claude -p` (sectioning
+large documents the same way the automatic path does, to avoid truncation),
+then saves the result via two small helper scripts that run inside the
+backend container:
+
+- `scripts/export_doc_text.py` — dumps a document's raw parsed text
+- `scripts/set_summary.py` — writes a summary into `documents.summary`
+
+Both can also be run manually if you want to review or edit the extract
+yourself before saving it:
+
+```bash
+docker compose exec -T backend python export_doc_text.py --pending
+docker compose exec -T backend python export_doc_text.py <document_id> > doc.txt
+# ... read/edit doc.txt, write your own summary to summary.txt ...
+docker compose exec -T backend python set_summary.py <document_id> < summary.txt
+```
 
 ## Enabling HTTPS for remote access
 

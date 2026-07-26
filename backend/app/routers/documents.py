@@ -20,7 +20,8 @@ UPLOAD_DIR = Path("/data/uploads")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 
-def _process_document(document_id: str, path: Path, filename: str, groups: list[str]):
+def _process_document(document_id: str, path: Path, filename: str, groups: list[str],
+                       auto_summary: bool = False):
     from app.database import SessionLocal
 
     db = SessionLocal()
@@ -48,11 +49,15 @@ def _process_document(document_id: str, path: Path, filename: str, groups: list[
 
         # Best-effort: structured extract for cheap full-document-mode
         # queries later. Non-fatal — the document is still fully usable via
-        # similarity search / raw-chunk fallback if this fails.
-        try:
-            doc.summary = generate_document_summary(filename, text)
-        except Exception:  # noqa: BLE001
-            doc.summary = None
+        # similarity search / raw-chunk fallback if this fails or is skipped.
+        # Skipping (auto_summary=False) leaves summary NULL so it can be
+        # filled in later via scripts/claude_code_summarize.py instead,
+        # without spending ANTHROPIC_API_KEY tokens.
+        if auto_summary:
+            try:
+                doc.summary = generate_document_summary(filename, text)
+            except Exception:  # noqa: BLE001
+                doc.summary = None
 
         doc.status = "ready"
         db.commit()
@@ -69,6 +74,7 @@ def upload_document(
     background_tasks: BackgroundTasks,
     file: UploadFile,
     group_names: str = "",  # comma-separated, e.g. "dcas-cert,public"
+    auto_summary: bool = False,  # True: generate the summary immediately via the metered API
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -121,7 +127,9 @@ def upload_document(
     with open(dest_path, "wb") as f:
         f.write(data)
 
-    background_tasks.add_task(_process_document, doc.id, dest_path, file.filename, requested_groups)
+    background_tasks.add_task(
+        _process_document, doc.id, dest_path, file.filename, requested_groups, auto_summary
+    )
 
     return doc
 

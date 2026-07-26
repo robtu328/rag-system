@@ -200,6 +200,7 @@ $("upload-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const fileInput = $("upload-file");
   const groups = $("upload-groups").value;
+  const autoSummary = $("upload-summary-mode").value !== "skip";
   if (!fileInput.files.length) return;
 
   const formData = new FormData();
@@ -207,8 +208,9 @@ $("upload-form").addEventListener("submit", async (e) => {
 
   $("upload-status").textContent = "Uploading...";
   try {
-    const qs = groups ? `?group_names=${encodeURIComponent(groups)}` : "";
-    await api(`/documents/upload${qs}`, { method: "POST", body: formData });
+    const params = new URLSearchParams({ auto_summary: autoSummary });
+    if (groups) params.set("group_names", groups);
+    await api(`/documents/upload?${params}`, { method: "POST", body: formData });
     $("upload-status").textContent = "Uploaded — processing in the background.";
     fileInput.value = "";
     $("upload-groups").value = "";

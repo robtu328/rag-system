@@ -66,6 +66,10 @@
         <form id="upload-form">
           <input type="file" id="upload-file" accept=".pdf,.docx,.txt,.md,.html,.htm" required>
           <input type="text" id="upload-groups" placeholder="groups (comma separated)">
+          <select id="upload-summary-mode" title="How to generate this document's summary (used for 'list all X' style questions)">
+            <option value="skip" selected>Summary: skip (generate later via Claude Code)</option>
+            <option value="auto">Summary: automatic (uses Anthropic API)</option>
+          </select>
           <button type="submit">Upload</button>
         </form>
       </div>
